@@ -30,52 +30,56 @@ typedef struct {
 } Matricula;
 
 void menu() {
+    printf(" --- Menu principal ---\n");
     printf("Disciplina - 1\n");
     printf("Aluno - 2\n");
     printf("Matrículas - 3\n");
     printf("Finalizar programa - 4\n");
 }
-
 void menu_disciplina() {
+    printf(" --- Menu para disciplinas ---\n");
     printf("Cadastrar nova disciplina - 1\n");
     printf("Excluir disciplina existente - 2\n");
     printf("Alterar dados da disciplina - 3\n");
     printf("Exibir dados de uma disciplina - 4\n");
     printf("Retornar ao menu principal - 5\n");
 }
-
 void menu_aluno() {
+    printf(" --- Menu para alunos ---\n");
     printf("Cadastrar novo aluno - 1\n");
     printf("Alterar dados de um aluno - 2\n");
     printf("Exibir dados de um aluno - 3\n");
     printf("Remover aluno - 4\n");
     printf("Retornar ao menu principal - 5\n");
 }
-
 void menu_matricula() {
+    printf(" --- Menu para matriculas ---\n");
     printf("Inclusão de matrícula - 1\n");
     printf("Exclusão de matrícula - 2\n");
     printf("Retornar ao menu principal - 3\n");
 }
 
-int consulta_aluno(const char* matricula_procurada) { //esse tipo de parametro deixa claro que é apenas para leitura e que a matricula recebida não pode ser alterada ao longo da função
+int consulta_aluno(const char* matricula_procurada) {
     int i = 0;
-    FILE *file; 
+    FILE *file;
     Aluno al;
+    
     file = fopen("arquivo_aluno", "rb");
     if (file == NULL) {
         printf("Erro ao tentar abrir o arquivo.\n");
-        return -2;
+        return -2;  
     }
+    
     while (fread(&al, sizeof(Aluno), 1, file)) {
         if (strcmp(al.matricula, matricula_procurada) == 0) {
-            fclose(file);
-            return i;
+            fclose(file); 
+            return i;  
         }
         i++;
     }
+
     fclose(file);
-    return -1;
+    return -1;  
 }
 
 int email(char* email) {
@@ -168,7 +172,7 @@ void cadastrar_aluno() {
 }
 
 void alterar_dados(char matricula[]) {
-    int aluno = consulta_aluno(matricula), i, verificar;
+    int aluno = consulta_aluno(matricula), verificar;
     Aluno al;
     FILE *file;
     if (aluno == -1) {
@@ -176,57 +180,61 @@ void alterar_dados(char matricula[]) {
         return;
     }
     file = fopen("arquivo_aluno", "r+b");
-    if (file == NULL){
+    if (file == NULL) {
         printf("Erro ao tentar abrir o arquivo! \n");
         return;
     }
-    fseek(file, aluno * sizeof(Aluno), SEEK_SET);
+    fseek(file, aluno * sizeof(Aluno), SEEK_SET); 
     fread(&al, sizeof(Aluno), 1, file);
-
     printf("Aluno encontrado!\n");
     printf("Alterando dados do aluno %s de matrícula %s.\n", al.nome, matricula);
     printf("Novo nome do aluno: ");
-    fgets(al.nome, 250, stdin);
+    fgets(al.nome, sizeof(al.nome), stdin);
     al.nome[strcspn(al.nome, "\n")] = '\0';
-    for (i = 0; al.nome[i] != '\0'; i++) {
-        if (!isalpha(al.nome[i]) && !isspace(al.nome[i])) {
-            printf("O nome que foi inserido é inválido!\n");
-            fclose(file);
-            return;
-        }
+    if (nome(al.nome) != 1) {
+        printf("O nome inserido é inválido!\n");
+        fclose(file);
+        return;
     }
     printf("\nEmail: ");
-    fgets(al.email, 100, stdin);
+    fgets(al.email, sizeof(al.email), stdin);
     al.email[strcspn(al.email, "\n")] = '\0';
     verificar = email(al.email);
-    if (verificar != 1){
-        printf("O E-mail não é válido! Tente novamente. \n");
+    if (verificar != 1) {
+        printf("O E-mail não é válido! Tente novamente.\n");
+        fclose(file);
         return;
     }
     printf("\nTelefone: ");
-    fgets(al.telefone, 15, stdin);
+    fgets(al.telefone, sizeof(al.telefone), stdin);
     al.telefone[strcspn(al.telefone, "\n")] = '\0';
-    fseek(file, aluno * sizeof(Aluno), SEEK_SET);
+    if (telefone(al.telefone) != 1) {
+        printf("O telefone inserido não é válido! \n");
+        fclose(file);
+        return;
+    }
+    fseek(file, aluno * sizeof(Aluno), SEEK_SET); 
     fwrite(&al, sizeof(Aluno), 1, file);
     fclose(file);
     printf("Dados alterados com sucesso!\n");
 }
 
-void exibir_dados(char matricula[]){
+void exibir_dados(char matricula[]) {
     FILE *file;
     Aluno al;
     int ver = consulta_aluno(matricula);
-    if(ver == -1){
+
+    if (ver == -1) {
         printf("Aluno não encontrado. \n");
         return;
     }
-     file = fopen("arquivo_aluno", "rb");
-    if (file == NULL){
+
+    file = fopen("arquivo_aluno", "r+b");
+    if (file == NULL) {
         printf("Erro ao abrir o arquivo. \n");
         return;
     }
-    fseek(file, ver * sizeof(Aluno), SEEK_SET);
-    fread(&al, sizeof(Aluno), 1, file);
+    fseek(file, ver * sizeof(Aluno), SEEK_SET);  
     if (fread(&al, sizeof(Aluno), 1, file) != 1) {
         printf("Erro ao ler os dados do aluno.\n");
         fclose(file);
@@ -235,11 +243,11 @@ void exibir_dados(char matricula[]){
     printf("Nome do aluno: %s\n", al.nome);
     printf("E-mail: %s\n", al.email);
     printf("Telefone: %s\n", al.telefone);
-    printf("Quantidade de disciplinas que está matriculado: %d\n", al.qnt_disciplinas);
-    fclose(file);
+    printf("Quantidade de disciplinas que está matriculado atualmente: %d\n", al.qnt_disciplinas);
+    fclose(file);  
 }
 
-void remover_aluno(const char* email_procurado) {
+void remover_aluno(char* email_procurado) {
     FILE *file, *temporario;
     Aluno al;
     int encontrado = 0;
@@ -275,148 +283,286 @@ void remover_aluno(const char* email_procurado) {
     }
 }
 
-
-int consulta_disciplina(const char* codigo_procurado) { 
+int consulta_disciplina(char* codigo_procurado) { 
     int i = 0;
     FILE *file; 
     Disciplina dis;
-
     file = fopen("disciplina_arquivos", "rb");
     if (file == NULL) {
-        printf("Erro ao tentar abrir o arquivo.\n");
-        return -2;
+        printf("Erro ao tentar abrir o arquivo 'disciplina_arquivos'.\n");
+        return -2; 
     }
-
-    while (fread(&dis, sizeof(Disciplina), 1, file)) {
+    while (fread(&dis, sizeof(Disciplina), 1, file) == 1) {
         if (strcmp(dis.codigo_disciplina, codigo_procurado) == 0) {
-            fclose(file);
-            return i;
+            fclose(file); 
+            return i;  
         }
-        i++; 
+        i++;  
     }
-
     fclose(file);
-    return -1;
+    return -1;  
 }
 
-void cadastrar_disciplina(FILE *cadastrar_disciplina){
+void cadastrar_disciplina(FILE *cadastrar_disciplina) {
     Disciplina dis;
-
-    printf("Insira o código da disciplina: ");
-    fgets(dis.codigo_disciplina, 9, stdin);
+    char input[256];
+    
+    printf("Insira o código da disciplina: "); //especificar como deve ser o codigo da disciplina
+    fgets(dis.codigo_disciplina, sizeof(dis.codigo_disciplina), stdin);
     dis.codigo_disciplina[strcspn(dis.codigo_disciplina, "\n")] = '\0';
     int consultar = consulta_disciplina(dis.codigo_disciplina);
-    if(consultar != -1){
+    if (consultar != -1) {
         printf("Esse código já existe! \n");
         return;
     }
     printf("Insira o nome da disciplina: ");
-    fgets(dis.nome_disciplina, 250, stdin);
+    fgets(dis.nome_disciplina, sizeof(dis.nome_disciplina), stdin);
     dis.nome_disciplina[strcspn(dis.nome_disciplina, "\n")] = '\0'; 
-    if (nome(dis.nome_disciplina)!= 1){
+    if (nome(dis.nome_disciplina) != 1) {
         printf("O nome inserido não é válido! \n");
         return;
     }
-    printf("Insira o horário da disciplina:  Exemplo: (08:00AM - 12:00PM)");
-    fgets(dis.horario_disciplina, 250, stdin); //verificar se é valido
+    printf("Insira o horário da disciplina: Exemplo: (08:00AM - 12:00PM)\n");
+    fgets(dis.horario_disciplina, sizeof(dis.horario_disciplina), stdin);
     dis.horario_disciplina[strcspn(dis.horario_disciplina, "\n")] = '\0';
+    if (strlen(dis.horario_disciplina) < 5) {
+        printf("Horário inválido!\n");
+        return;
+    }
     printf("Sala de aula onde ocorrerá a disciplina: ");
-    scanf(" %d", &dis.sala_aula);
+    fgets(input, sizeof(input), stdin);
+    if (sscanf(input, "%d", &dis.sala_aula) != 1) {
+        printf("Número de sala inválido!\n");
+        return;
+    }
     printf("Quantidade de vagas: ");
-    scanf(" %d", &dis.qnt_vagasTotal);
+    fgets(input, sizeof(input), stdin);
+    if (sscanf(input, "%d", &dis.qnt_vagasTotal) != 1) {
+        printf("Quantidade de vagas inválida!\n");
+        return;
+    }
     printf("Quantidade de vagas ocupadas: ");
-    scanf(" %d", &dis.qnt_vagasOcupadas);
+    fgets(input, sizeof(input), stdin);
+    if (sscanf(input, "%d", &dis.qnt_vagasOcupadas) != 1) {
+        printf("Quantidade de vagas ocupadas inválida!\n");
+        return;
+    }
+    
     if (dis.qnt_vagasOcupadas > dis.qnt_vagasTotal) {
         printf("Quantidade de vagas ocupadas não pode exceder a total.\n");
         return;
     }
     printf("Qual o status da disciplina: (1 - ativo, 0 - deletado) ");
-    scanf(" %d", &dis.status);
-    
+    fgets(input, sizeof(input), stdin);
+    if (sscanf(input, "%d", &dis.status) != 1 || (dis.status != 0 && dis.status != 1)) {
+        printf("Status inválido!\n");
+        return;
+    }
     fwrite(&dis, sizeof(Disciplina), 1, cadastrar_disciplina);
     printf("Disciplina cadastrada com sucesso!\n");
-
 }
 
 void alterar_disciplina() {
-    char codigo[8];
+    char codigo[9];  
+    FILE *file;
     Disciplina dis;
     int pos;
 
     printf("Digite o código da disciplina que deseja alterar: ");
-    fgets(codigo, 8, stdin);
+    fgets(codigo, sizeof(codigo), stdin);
     codigo[strcspn(codigo, "\n")] = '\0';
-
     pos = consulta_disciplina(codigo);
     if (pos == -1) {
         printf("Disciplina não encontrada.\n");
         return;
     }
-
-    FILE *file = fopen("arquivo_disciplina", "r+b");
+    file = fopen("arquivo_disciplina", "r+b");
     if (file == NULL) {
         printf("Erro ao abrir o arquivo.\n");
         return;
     }
-
     fseek(file, pos * sizeof(Disciplina), SEEK_SET);
     fread(&dis, sizeof(Disciplina), 1, file);
-
-    printf("Nome atual: %s\nNovo nome: ", dis.nome_disciplina);
-    fgets(dis.nome_disciplina, 250, stdin);
+    printf("Nome atual: %s\n", dis.nome_disciplina);
+    printf("Novo nome: ");
+    fgets(dis.nome_disciplina, sizeof(dis.nome_disciplina), stdin);
     dis.nome_disciplina[strcspn(dis.nome_disciplina, "\n")] = '\0';
-
+    if (strlen(dis.nome_disciplina) == 0) {
+        printf("Nome da disciplina não pode ser vazio.\n");
+        fclose(file);
+        return;
+    }
     fseek(file, pos * sizeof(Disciplina), SEEK_SET);
-    fwrite(&dis, sizeof(Disciplina), 1, file);
+    if (fwrite(&dis, sizeof(Disciplina), 1, file) != 1) {
+        printf("Erro ao salvar as alterações.\n");
+        fclose(file);
+        return;
+    }
     fclose(file);
     printf("Disciplina alterada com sucesso!\n");
 }
 
-void exibir_disciplina(){
+void exibir_disciplina() {
+    FILE *file;
+    Disciplina dis;
+    
+    printf("Digite o código da disciplina que deseja EXIBIR: ");
+    fgets(dis.codigo_disciplina, sizeof(dis.codigo_disciplina), stdin);
+    dis.codigo_disciplina[strcspn(dis.codigo_disciplina, "\n")] = '\0'; 
+    int pos = consulta_disciplina(dis.codigo_disciplina);
+    if (pos == -1) {
+        printf("Disciplina não encontrada.\n");
+        return;
+    }
+    file = fopen("arquivo_disciplina", "rb");
+    if (file == NULL) {
+        printf("Erro ao abrir o arquivo.\n");
+        return;
+    }
+    fseek(file, pos * sizeof(Disciplina), SEEK_SET);
+    fread(&dis, sizeof(Disciplina), 1, file);
 
+    printf("\nNome da disciplina: %s", dis.nome_disciplina);
+    printf("\nHorário da disciplina: %s", dis.horario_disciplina);
+    printf("\nSala: %d", dis.sala_aula);
+    printf("\nQuantidade de vagas (total): %d", dis.qnt_vagasTotal);
+    printf("\nQuantidade de vagas ocupadas atualmente: %d", dis.qnt_vagasOcupadas);
+    printf("\nStatus da disciplina: %s", (dis.status == 1) ? "Ativo" : "Inativo");
+    fclose(file);
 }
 
-void remover_disciplina(){
+void remover_disciplina() {
+    FILE *file, *temporario;
+    Disciplina dis;
+    char codigo[8];
+    int encontrado = 0;
 
+    printf("Digite o código da disciplina que deseja remover: ");
+    fgets(codigo, sizeof(codigo), stdin);
+    codigo[strcspn(codigo, "\n")] = '\0';
+    int pos = consulta_disciplina(codigo);
+    if (pos == -1) {
+        printf("Disciplina não encontrada.\n");
+        return;
+    }
+    file = fopen("arquivo_disciplina", "rb");
+    if (file == NULL) {
+        printf("Erro ao tentar abrir o arquivo de disciplinas.\n");
+        return;
+    }
+    temporario = fopen("arquivoTemporario_disciplina", "wb");
+    if (temporario == NULL) {
+        printf("Erro ao criar o arquivo temporário.\n");
+        fclose(file);
+        return;
+    }
+    while (fread(&dis, sizeof(Disciplina), 1, file) == 1) {
+        if (strcmp(dis.codigo_disciplina, codigo) != 0) {
+            fwrite(&dis, sizeof(Disciplina), 1, temporario);
+        } else {
+            encontrado = 1;
+            printf("A disciplina de código %s foi encontrada e será removida.\n", codigo);
+        }
+    }
+
+    fclose(file);
+    fclose(temporario);
+    if (encontrado) {
+        remove("arquivo_disciplina");
+        rename("arquivoTemporario_disciplina", "arquivo_disciplina");
+        printf("Disciplina removida com sucesso.\n");
+    } else {
+        remove("arquivoTemporario_disciplina");
+        printf("Disciplina não encontrada.\n");
+    }
 }
 
-void incluir_matricula(){
+void incluir_matricula() {
     FILE *matricula;
     Matricula mat;
 
     matricula = fopen("arquivo_matricula", "a+b");
-    if(matricula == NULL){
-        printf("Erro ao tentar abrir/criar o arquivo. \n");
+    if (matricula == NULL) {
+        printf("Erro ao tentar abrir/criar o arquivo.\n");
         return;
     }
     printf("\nInsira o código da disciplina que você deseja se matricular: ");
     fgets(mat.codigo_disciplina, 9, stdin);
     mat.codigo_disciplina[strcspn(mat.codigo_disciplina, "\n")] = '\0';
-    if (consulta_disciplina(mat.codigo_disciplina) == -1){
-        printf("Esse código não existe. Tente novamente. \n");
+    if (consulta_disciplina(mat.codigo_disciplina) == -1) {
+        printf("Esse código de disciplina não existe. Tente novamente.\n");
         fclose(matricula);
         return;
     }
-    printf("\nMatricula do aluno: ");
+    printf("\nMatrícula do aluno: ");
     fgets(mat.matricula, 12, stdin);
     mat.matricula[strcspn(mat.matricula, "\n")] = '\0';
-    if(consulta_aluno(mat.matricula) == -1){
-        printf("Esse aluno não existe! \n");
+    if (consulta_aluno(mat.matricula) == -1) {
+        printf("Esse aluno não existe!\n");
         fclose(matricula);
         return;
     }
-    printf("\nData de matricula: ");
+    printf("\nData da matrícula (formato: DD/MM/AAAA): ");
     fgets(mat.data_matricula, 9, stdin);
     mat.data_matricula[strcspn(mat.data_matricula, "\n")] = '\0';
-    printf("\nQual o status do registro? ex: (1 - ativo/0 - deletado)");
+    printf("\nQual o status do registro? (1 - ativo / 0 - deletado): ");
     scanf(" %d", &mat.status);
 
+    fwrite(&mat, sizeof(Matricula), 1, matricula);
     fclose(matricula);
-    printf("Cadastro realizado com sucesso! \n");
+    printf("Matrícula realizada com sucesso!\n");
 }
 
-void excluir_matricula(){
+int consulta_matricula(char matricula_procurada[]) {
+    int i = 0;
+    FILE *file;
+    Matricula mat;
 
+    file = fopen("arquivo_matricula", "rb");
+    if (file == NULL) {
+        printf("Erro ao tentar abrir o arquivo.\n");
+        return -2;
+    }
+    while (fread(&mat, sizeof(Matricula), 1, file)) {
+        if (strcmp(mat.matricula, matricula_procurada) == 0) {
+            fclose(file);
+            return i;
+        }
+        i++; 
+    }
+    fclose(file);
+    return -1; 
+}
+
+
+void excluir_matricula(char *matricular) {
+    FILE *matricula;
+    Matricula mat;
+    char matricula_aluno[12]; 
+    int pos;
+
+    matricula = fopen("arquivo_matricula", "r+b");
+    if (matricula == NULL) {
+        printf("Erro ao tentar abrir o arquivo.\n");
+        return;
+    }
+    printf("Digite a matrícula do aluno que deseja excluir: ");
+    fgets(matricula_aluno, 12, stdin);
+    matricula_aluno[strcspn(matricula_aluno, "\n")] = '\0';
+    pos = consulta_matricula(matricula_aluno); 
+    if (pos == -1) {
+        printf("Aluno não encontrado ou matrícula não encontrada.\n");
+        fclose(matricula);
+        return;
+    }
+    fseek(matricula, pos * sizeof(Matricula), SEEK_SET);
+    fread(&mat, sizeof(Matricula), 1, matricula);
+    mat.status = 0;
+    fseek(matricula, pos * sizeof(Matricula), SEEK_SET);
+    fwrite(&mat, sizeof(Matricula), 1, matricula);
+
+    fclose(matricula);
+    printf("Matrícula excluída com sucesso!\n");
 }
 
 int main() {
@@ -425,6 +571,8 @@ int main() {
     FILE *matricula;
     int op, op_disciplina, op_aluno, op_matricula;
     Aluno al;
+    Disciplina dis;
+    Matricula mat;
 
     do {
         printf("\nSelecione o módulo a ser trabalhado:\n");
@@ -448,18 +596,21 @@ int main() {
                             return 1;
                         }
                         else{
-                            cadastrar_disciplina(disciplina);
+                            cadastrar_disciplina(disciplina);  
                             fclose(disciplina);
                         }
                         break;
                     case 2:
                         printf("Você escolheu a opção 'Excluir disciplina'. \n");
+                        remover_disciplina();
                         break;
                     case 3:
                         printf("Você escolheu a opção 'Alterar dados da disciplina'. \n");
+                        alterar_disciplina();
                         break;
                     case 4:
                         printf("Você escolheu a opção 'Exibir dados de uma disciplina'. \n");
+                        exibir_disciplina();  
                         break;
                     case 5:
                         printf("Você escolheu a opção 'Retornar ao menu principal'. \n");
@@ -477,22 +628,27 @@ int main() {
                 switch (op_aluno) {
                     case 1:
                         printf("Você escolheu a opção 'Cadastrar novo aluno'.\n");
-                        cadastrar_aluno();
+                        cadastrar_aluno();  
                         break;
                     case 2:
                         printf("Você escolheu a opção 'Alterar dados de um aluno'.\n");
                         printf("Digite a matricula do aluno que deseja modificar os dados:");
                         fgets(al.matricula, 12, stdin);
-                        alterar_dados(al.matricula);
+                        alterar_dados(al.matricula);  
                         break;
                     case 3:
                         printf("Você escolheu a opção 'Exibir dados de um aluno'.\n");
                         printf("Digite a matricula do aluno que deseja exibir os dados:");
                         fgets(al.matricula, 12, stdin);
-                        exibir_dados(al.matricula);
+                        al.matricula[strcspn(al.matricula, "\n")] = '\0';
+                        exibir_dados(al.matricula);  
                         break;
                     case 4:
                         printf("Você escolheu a opção 'Remover aluno'.\n");
+                        printf("Insira o e-email do aluno que deseja remover: ");
+                        fgets(al.email, 100, stdin);
+                        al.email[strcspn(al.email, "\n")] = '\0';
+                        remover_aluno(al.email); 
                         break;
                     case 5:
                         printf("Retornando ao menu principal.\n");
@@ -510,9 +666,13 @@ int main() {
                 switch (op_matricula){
                     case 1: 
                         printf("Você escolheu a opção 'Inclusão de matrícula'. \n");
+                        incluir_matricula();  
                         break;
                     case 2:
                          printf("Você escolheu a opção 'Exclusão de matrícula'. \n");
+                         printf("Digite a matricula que deseja excluir: ");
+                         fgets(mat.matricula, 12, stdin);
+                         excluir_matricula(mat.matricula); 
                          break;
                     case 3: 
                         printf("Você escolheu a opção 'Retornar ao menu principal'. \n");
