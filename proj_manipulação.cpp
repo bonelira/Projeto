@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#define tam 10
 
 typedef struct aluno {
     char matricula[12];
@@ -57,7 +58,7 @@ void menu_matricula() {
     printf("Exclusão de matrícula - 2\n");
     printf("Retornar ao menu principal - 3\n");
 }
-//modulo aluno
+
 int consulta_aluno(const char* matricula_procurada) {
     int i = 0;
     FILE *file;
@@ -281,16 +282,17 @@ void remover_aluno(char* email_procurado) {
         printf("O aluno com e-mail %s não foi encontrado.\n", email_procurado);
     }
 }
-//modulo disciplina
+
 int consulta_disciplina(char* codigo_procurado) { 
     int i = 0;
     FILE *file; 
     Disciplina dis;
-    file = fopen("disciplina_arquivos", "a+b"); // mudei de rb para a+b ATENÇÃO AQUI!!
+    file = fopen("arquivo_disciplina", "rb"); 
     if (file == NULL) {
-        printf("Erro ao tentar abrir o arquivo 'disciplina_arquivos'.\n");
+        printf("Erro ao tentar abrir o arquivo 'arquivo_disciplina'.\n");
         return -2; 
     }
+    fseek(file, 0, SEEK_SET);
     while (fread(&dis, sizeof(Disciplina), 1, file) == 1) {
         if (strcmp(dis.codigo_disciplina, codigo_procurado) == 0) {
             fclose(file); 
@@ -302,18 +304,24 @@ int consulta_disciplina(char* codigo_procurado) {
     return -1;  
 }
 
-void cadastrar_disciplina(FILE *file_disciplina) {
+void cadastrar_disciplina() {
     Disciplina dis;
     char input[256];
     int encontrado = 0;
+    char codigo_procurado[8];
+    FILE *file_disciplina;
 
+    file_disciplina = fopen("arquivo_disciplina", "a+b");
+    if(file_disciplina == NULL){
+        printf("Erro ao abrir/criar arquivo. \n");
+        return;
+    }
     printf("Insira o código da disciplina: ");
-    fgets(dis.codigo_disciplina,8, stdin);
-    dis.codigo_disciplina[strcspn(dis.codigo_disciplina, "\n")] = '\0';
-
-    fseek(file_disciplina, 0, SEEK_SET);
+    fgets(codigo_procurado, sizeof(codigo_procurado), stdin);
+    codigo_procurado[strcspn(codigo_procurado, "\n")] = '\0';
+    fseek(file_disciplina, 0, SEEK_SET); 
     while (fread(&dis, sizeof(Disciplina), 1, file_disciplina) == 1) {
-        if (strcmp(dis.codigo_disciplina, dis.codigo_disciplina) == 0) {
+        if (strcmp(dis.codigo_disciplina, codigo_procurado) == 0) {
             printf("Erro: A disciplina com este código já existe!\n");
             encontrado = 1;
             break;
@@ -321,10 +329,11 @@ void cadastrar_disciplina(FILE *file_disciplina) {
     }
 
     if (!encontrado) {
+        strcpy(dis.codigo_disciplina, codigo_procurado);
         printf("Insira o nome da disciplina: ");
         fgets(dis.nome_disciplina, sizeof(dis.nome_disciplina), stdin);
-        dis.nome_disciplina[strcspn(dis.nome_disciplina, "\n")] = '\0';
 
+        dis.nome_disciplina[strcspn(dis.nome_disciplina, "\n")] = '\0';
         printf("Insira o horário da disciplina: Exemplo: (08:00AM - 12:00PM)\n");
         fgets(dis.horario_disciplina, sizeof(dis.horario_disciplina), stdin);
         dis.horario_disciplina[strcspn(dis.horario_disciplina, "\n")] = '\0';
@@ -333,40 +342,43 @@ void cadastrar_disciplina(FILE *file_disciplina) {
         fgets(input, sizeof(input), stdin);
         if (sscanf(input, "%d", &dis.sala_aula) != 1) {
             printf("Número de sala inválido!\n");
+            fclose(file_disciplina);
             return;
         }
-
         printf("Quantidade de vagas: ");
         fgets(input, sizeof(input), stdin);
         if (sscanf(input, "%d", &dis.qnt_vagasTotal) != 1) {
             printf("Quantidade de vagas inválida!\n");
+            fclose(file_disciplina);
             return;
         }
-
         printf("Quantidade de vagas ocupadas: ");
         fgets(input, sizeof(input), stdin);
         if (sscanf(input, "%d", &dis.qnt_vagasOcupadas) != 1) {
             printf("Quantidade de vagas ocupadas inválida!\n");
+            fclose(file_disciplina);
             return;
         }
-
         if (dis.qnt_vagasOcupadas > dis.qnt_vagasTotal) {
             printf("Quantidade de vagas ocupadas não pode exceder a total.\n");
+            fclose(file_disciplina);
             return;
         }
-
         printf("Qual o status da disciplina: (1 - ativo, 0 - deletado) ");
         fgets(input, sizeof(input), stdin);
         if (sscanf(input, "%d", &dis.status) != 1) {
             printf("Status inválido!\n");
+            fclose(file_disciplina);
             return;
         }
-
-        fseek(file_disciplina, 0, SEEK_END);
+        fseek(file_disciplina, 0, SEEK_END); 
         fwrite(&dis, sizeof(Disciplina), 1, file_disciplina);
         printf("Disciplina cadastrada com sucesso.\n");
-    } 
+    }
+
+    fclose(file_disciplina);
 }
+
 void alterar_disciplina() {
     char codigo[9];  
     FILE *file;
@@ -379,7 +391,6 @@ void alterar_disciplina() {
     pos = consulta_disciplina(codigo);
     if (pos == -1) {
         printf("Disciplina não encontrada.\n");
-        fclose(file);
         return;
     }
     file = fopen("arquivo_disciplina", "r+b");
@@ -411,29 +422,37 @@ void alterar_disciplina() {
 void exibir_disciplina() {
     FILE *file;
     Disciplina dis;
-    
+    char codigo_procurado[8];
+
     printf("Digite o código da disciplina que deseja EXIBIR: ");
-    fgets(dis.codigo_disciplina, sizeof(dis.codigo_disciplina), stdin);
-    dis.codigo_disciplina[strcspn(dis.codigo_disciplina, "\n")] = '\0'; 
-    int pos = consulta_disciplina(dis.codigo_disciplina);
+    fgets(codigo_procurado, sizeof(codigo_procurado), stdin);
+    codigo_procurado[strcspn(codigo_procurado, "\n")] = '\0';
+
+    int pos = consulta_disciplina(codigo_procurado);
     if (pos == -1) {
         printf("Disciplina não encontrada.\n");
         return;
     }
-    file = fopen("arquivo_disciplina", "r+b");
+
+    file = fopen("arquivo_disciplina", "rb");
     if (file == NULL) {
         printf("Erro ao abrir o arquivo.\n");
         return;
     }
-    fseek(file, pos * sizeof(Disciplina), SEEK_SET);
-    fread(&dis, sizeof(Disciplina), 1, file);
 
-    printf("\nNome da disciplina: %s", dis.nome_disciplina);
-    printf("\nHorário da disciplina: %s", dis.horario_disciplina);
+    fseek(file, pos * sizeof(Disciplina), SEEK_SET);
+    if (fread(&dis, sizeof(Disciplina), 1, file) != 1) {
+        printf("Erro ao ler a disciplina no arquivo.\n");
+        fclose(file);
+        return;
+    }
+    printf("\nCódigo: %s", dis.codigo_disciplina);
+    printf("\nNome: %s", dis.nome_disciplina);
+    printf("\nHorário: %s", dis.horario_disciplina);
     printf("\nSala: %d", dis.sala_aula);
-    printf("\nQuantidade de vagas (total): %d", dis.qnt_vagasTotal);
-    printf("\nQuantidade de vagas ocupadas atualmente: %d", dis.qnt_vagasOcupadas);
-    printf("\nStatus da disciplina: %s", (dis.status == 1) ? "Ativo" : "Inativo");
+    printf("\nVagas Totais: %d", dis.qnt_vagasTotal);
+    printf("\nVagas Ocupadas: %d", dis.qnt_vagasOcupadas);
+    printf("\nStatus: %s", (dis.status == 1) ? "Ativo" : "Inativo");
     fclose(file);
 }
 
@@ -482,7 +501,7 @@ void remover_disciplina() {
         printf("Disciplina não encontrada.\n");
     }
 }
-//modulo matricula
+
 void incluir_matricula() {
     FILE *matricula;
     Matricula mat;
@@ -572,12 +591,8 @@ void excluir_matricula(char *matricular) {
 }
 
 int main() {
-    FILE *file_cadastroaluno;
-    FILE  *disciplina;
-    FILE *matricula;
     int op, op_disciplina, op_aluno, op_matricula;
     Aluno al;
-    Disciplina dis;
     Matricula mat;
 
     do {
@@ -596,15 +611,7 @@ int main() {
                 switch (op_disciplina){
                     case 1:
                         printf("Você escolheu a opção 'Cadastrar disciplina'. \n");
-                        disciplina = fopen("arquivo_disciplina", "a+b");
-                        if(disciplina == NULL){
-                            printf("Erro ao abrir/criar o arquivo! \n");
-                            return 1;
-                        }
-                        else{
-                            cadastrar_disciplina(disciplina);  
-                            fclose(disciplina);
-                        }
+                        cadastrar_disciplina();
                         break;
                     case 2:
                         printf("Você escolheu a opção 'Excluir disciplina'. \n");
@@ -694,7 +701,6 @@ int main() {
                 printf("Opção inválida. Tente novamente.\n");
         }
     } while (op != 4);
-
     //remoção
     int status;
     status = remove("arquivo_aluno");
